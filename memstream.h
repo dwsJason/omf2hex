@@ -9,6 +9,8 @@
 #define MEMSTREAM_H_
 
 
+#include <string>
+
 // Prototypes
 void *memcpy(void *dest, const void *src, size_t n);
 
@@ -43,13 +45,32 @@ public:
 	template <class T>
 	void Read(T& result)
 	{
-		memcpy(&result, m_pStreamCurrent, sizeof(T));
-		m_pStreamCurrent += sizeof(T);
+		memcpy(&result, m_pStreamCurrent, sizeof(result));
+		m_pStreamCurrent += sizeof(result);
+	}
+
+	std::string ReadPString()
+	{
+		std::string result;
+
+		u8 length = *m_pStreamCurrent++;
+
+		result.insert(0, (char*)m_pStreamCurrent, (size_t)length);
+
+		m_pStreamCurrent += length;
+
+		return result;
 	}
 
 	size_t SeekCurrent(int delta)
 	{
 		m_pStreamCurrent += delta;
+		return m_pStreamCurrent - m_pStreamStart;
+	}
+
+	size_t SeekSet(size_t offset)
+	{
+		m_pStreamCurrent = m_pStreamStart + offset;
 		return m_pStreamCurrent - m_pStreamStart;
 	}
 
