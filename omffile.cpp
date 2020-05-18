@@ -7,6 +7,21 @@
 #include "memstream.h"  // Jason's memory stream thing
 
 #include <stdio.h>
+
+// -----------------------------------------------------------------------------
+
+// Static Local Helper functions
+//
+// Fixed Label, probably doesn't have a zero termination
+//
+static std::string FixedLabelToString( u8* pLabel, size_t numBytes )
+{
+	std::string result;
+	result.insert(0, (char*)pLabel, numBytes);
+	return result;
+}
+// -----------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 OMFFile::OMFFile( std::string filepath )
 	: m_filepath( filepath )
@@ -20,9 +35,9 @@ OMFFile::OMFFile( std::string filepath )
 		size_t length = ftell(pFile);
 		fseek(pFile, 0, SEEK_SET);
 
-		printf("OMFFile %s - %lld bytes\n", filepath.c_str(), length);
+		printf("\nOMFFile %s - %lld bytes\n", filepath.c_str(), length);
 
-		printf("\nReading %s\n", filepath.c_str());
+		printf("Reading %s\n", filepath.c_str());
 
 		u8* pData = new u8[ length ];
 
@@ -73,6 +88,8 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 {
 	MemoryStream& ss = sectionStream;
 
+	size_t stream_start = sectionStream.SeekCurrent(0);	// save where we are right now
+
 	ss.Read( m_bytecnt );
 	ss.Read( m_resspc );
 	ss.Read( m_length );
@@ -81,7 +98,7 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 	ss.Read( m_lablen );
 	ss.Read( m_numlen );
 	ss.Read( m_version );
-	ss.Read( m_revision );
+//	ss.Read( m_revision );
 
 	ss.Read( m_banksize );
 
@@ -98,11 +115,30 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 
 	ss.Read( m_entry );
 
-	ss.Read( m_dispname );
+	ss.Read( m_dispname ); // displacement to name
 
-	ss.Read( m_dispdata );
+	ss.Read( m_dispdata ); // displacement to data
 
-	ss.Read( m_temporg );
+//	ss.Read( m_temporg );
+
+	printf("m_version %d\n", m_version);
+	printf("m_segnum  %d\n", m_segnum);
+
+	// Seek to the name
+	ss.SeekSet(stream_start + m_dispname);
+
+	// Loadname 10 bytes, left justified
+	u8 tempLoadName[10];
+	ss.Read(tempLoadName);
+	m_loadname = FixedLabelToString( tempLoadName, sizeof(tempLoadName) );
+	printf("m_loadname = %s\n", m_loadname.c_str());
+
+	m_segname = ss.ReadPString();
+	printf("m_segname = %s\n", m_segname.c_str());
+
+	// Seek to the data
+	ss.SeekSet(stream_start + m_dispdata);
+
 }
 
 //------------------------------------------------------------------------------
