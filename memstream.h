@@ -62,6 +62,57 @@ public:
 		return result;
 	}
 
+	std::string ReadLine()
+	{
+		unsigned char* pStreamEnd = m_pStreamStart + m_streamSize;
+
+		std::string result;
+
+		u8 *pEndOfLine = m_pStreamCurrent;
+
+		while (pEndOfLine < pStreamEnd)
+		{
+			if ((0x0a != *pEndOfLine) && (0x0d != *pEndOfLine))
+			{
+				pEndOfLine++;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		size_t length = pEndOfLine - m_pStreamCurrent;
+
+		if (length)
+		{
+			// Capture the line
+			result.insert(0, (char*)m_pStreamCurrent, (size_t)length);
+			m_pStreamCurrent += length;
+		}
+
+		// Figure out if that loop broke out because we hit the end of the file
+		while (pEndOfLine < pStreamEnd)
+		{
+			if ((0x0a == *pEndOfLine) || (0x0d == *pEndOfLine))
+			{
+				pEndOfLine++;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		m_pStreamCurrent = pEndOfLine;
+		if (m_pStreamCurrent > pStreamEnd)
+		{
+			m_pStreamCurrent = pStreamEnd;
+		}
+		return result;
+
+	}
+
 	size_t SeekCurrent(int delta)
 	{
 		m_pStreamCurrent += delta;

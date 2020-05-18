@@ -21,6 +21,9 @@
     <ClCompile Include="omffile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="orgfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="omffile.h">
@@ -31,6 +34,9 @@
     </ClInclude>
     <ClInclude Include="memstream.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="orgfile.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

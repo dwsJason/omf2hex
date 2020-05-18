@@ -153,11 +153,13 @@
   <ItemGroup>
     <ClCompile Include="omf2hex.cpp" />
     <ClCompile Include="omffile.cpp" />
+    <ClCompile Include="orgfile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bctypes.h" />
     <ClInclude Include="memstream.h" />
     <ClInclude Include="omffile.h" />
+    <ClInclude Include="orgfile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

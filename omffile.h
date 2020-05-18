@@ -141,6 +141,10 @@ public:
 	*/
 	std::string m_segname;
 
+	// Unmodified data, as loaded from disk
+	//std::vector<u8> m_rawSegmentData;
+	MemoryStream m_rawSegmentStream; // we'll reference data in the parent file
+
 };
 
 
@@ -153,6 +157,9 @@ public:
 private:
 	std::string m_filepath;
 	std::vector<OMFSection> m_sections;
+
+	u8* m_pRawData;
+
 };
 
 #endif // OMFFILE_H_

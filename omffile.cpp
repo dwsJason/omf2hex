@@ -25,6 +25,7 @@ static std::string FixedLabelToString( u8* pLabel, size_t numBytes )
 //------------------------------------------------------------------------------
 OMFFile::OMFFile( std::string filepath )
 	: m_filepath( filepath )
+	, m_pRawData( nullptr )
 {
 	FILE* pFile = nullptr;
 	errno_t err = fopen_s(&pFile, filepath.c_str(), "rb");
@@ -62,7 +63,7 @@ OMFFile::OMFFile( std::string filepath )
 			}
 		}
 
-		delete[] pData;
+		m_pRawData = pData;
 
 		fclose(pFile);
 
@@ -76,19 +77,30 @@ OMFFile::OMFFile( std::string filepath )
 
 //------------------------------------------------------------------------------
 
-
 OMFFile::~OMFFile()
 {
+	if (m_pRawData)
+	{
+		delete[] m_pRawData;
+		m_pRawData = nullptr;
+	}
 }
 //------------------------------------------------------------------------------
 
 // OMF Section Sub Object
 
 OMFSection::OMFSection(MemoryStream sectionStream)
+	: m_rawSegmentStream(sectionStream)
 {
 	MemoryStream& ss = sectionStream;
-
 	size_t stream_start = sectionStream.SeekCurrent(0);	// save where we are right now
+
+	// Make a copy of the rawSegmentData
+	//m_rawSegmentData.insert(m_rawSegmentData.begin(), ss.NumBytesAvailable(), 0);  // carve out space for it
+	//memcpy(&m_rawSegmentData[0], ss.GetPointer(), ss.NumBytesAvailable() ); 	   // copy it
+	// I'm aware that this giant chonk of data is now going to get copied multiple times
+	// on the flip side, it's convenient to have a copy, so our parent file can
+	//m_rawSegmentStream = ss;
 
 	ss.Read( m_bytecnt );
 	ss.Read( m_resspc );
