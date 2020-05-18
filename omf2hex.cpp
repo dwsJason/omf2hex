@@ -36,6 +36,7 @@ int main(int argc, char* argv[])
 
 	if (pInfilePath)
 	{
+		OMFFile omf_file( pInfilePath );
 	}
 	else
 	{
