@@ -67,6 +67,10 @@ OMFFile::OMFFile( std::string filepath )
 
 		fclose(pFile);
 
+		// make sure we a virtual memory map to load our segments into
+		// so that we can patch them up
+		m_pRAM = new u8[ 16 * 1024 * 1024 ];
+
 		printf("\nRead Completed\n");
 	}
 	else
@@ -79,6 +83,12 @@ OMFFile::OMFFile( std::string filepath )
 
 OMFFile::~OMFFile()
 {
+	if (m_pRAM)
+	{
+		delete[] m_pRAM;
+		m_pRAM = nullptr;
+	}
+
 	if (m_pRawData)
 	{
 		delete[] m_pRawData;
@@ -133,8 +143,8 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 
 //	ss.Read( m_temporg );
 
-	printf("m_version %d\n", m_version);
-	printf("m_segnum  %d\n", m_segnum);
+//	printf("m_version %d\n", m_version);
+//	printf("m_segnum  %d\n", m_segnum);
 
 	// Seek to the name
 	ss.SeekSet(stream_start + m_dispname);
@@ -143,14 +153,13 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 	u8 tempLoadName[10];
 	ss.Read(tempLoadName);
 	m_loadname = FixedLabelToString( tempLoadName, sizeof(tempLoadName) );
-	printf("m_loadname = %s\n", m_loadname.c_str());
+//	printf("m_loadname = %s\n", m_loadname.c_str());
 
 	m_segname = ss.ReadPString();
-	printf("m_segname = %s\n", m_segname.c_str());
+//	printf("m_segname = %s\n", m_segname.c_str());
 
 	// Seek to the data
 	ss.SeekSet(stream_start + m_dispdata);
-
 }
 
 //------------------------------------------------------------------------------

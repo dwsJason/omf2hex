@@ -119,7 +119,10 @@ ORGFile::ORGFile( std::string filepath )
 							if (1 == c)
 							{
 								// This looks like a parsable line
-								printf("%s org $%06X\n", tokens[0].c_str(), orgAddress);
+								//printf("%s org $%06X\n", tokens[0].c_str(), orgAddress);
+								
+								m_sections.push_back(tokens[0]);
+								m_orgs.push_back(orgAddress);
 							}
 						}
 					}

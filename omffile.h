@@ -160,6 +160,8 @@ private:
 
 	u8* m_pRawData;
 
+	u8* m_pRAM;
+
 };
 
 #endif // OMFFILE_H_

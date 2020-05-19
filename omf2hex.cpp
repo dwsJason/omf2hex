@@ -37,11 +37,11 @@ int main(int argc, char* argv[])
 
 	if (pInfilePath)
 	{
-		// Load the OMF File
-		OMFFile omf_file( pInfilePath );
-
 		// Load the ORG File
 		ORGFile org_file( std::string(pInfilePath) + ".org" );
+
+		// Load the OMF File
+		OMFFile omf_file( pInfilePath );
 	}
 	else
 	{
