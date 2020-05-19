@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 		// Load the ORG File
 		ORGFile org_file( std::string(pInfilePath) + ".org" );
 
-		// Load the OMF File
+		// Cache the raw OMF File
 		OMFFile omf_file( pInfilePath );
 	}
 	else
