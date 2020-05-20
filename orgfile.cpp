@@ -147,7 +147,10 @@ ORGFile::ORGFile( std::string filepath )
 		printf("ASMCODE org $30000\n");
 		printf("vectors org $FFF0\n");
 		printf("\n\nWhen this file doesn't exist, the converter will auto ORG\n");
-		printf("starting in bank $02");
+		printf("starting in bank $02\n");
+		printf("Special Auto Allocation Commands\n");
+		printf(".alignment org $100   ; Minimum alignment to allocate\n");
+		printf(".autopack org $20000  ; Allocator doesn't allocate below this address\n\n");
 	}
 }
 
@@ -156,5 +159,35 @@ ORGFile::ORGFile( std::string filepath )
 ORGFile::~ORGFile()
 {
 }
+
 //------------------------------------------------------------------------------
 
+u32 ORGFile::GetAddress(std::string sectionName)
+{
+	u32 result_address = 0;
+	// If the address is in there, return it
+	// First remove trailing spaces from the sectionName
+
+	const size_t strEnd = sectionName.find_last_not_of(" ");
+
+	if (strEnd != std::string::npos)
+	{
+		if (strEnd != sectionName.length())
+		{
+			sectionName.resize(strEnd);
+		}
+	}
+
+	for (int labelIndex = 0; labelIndex < m_sections.size(); ++labelIndex)
+	{
+		if (sectionName == m_sections[labelIndex])
+		{
+			result_address = m_orgs[labelIndex];
+			break;
+		}
+	}
+
+	return result_address;
+}
+
+//------------------------------------------------------------------------------

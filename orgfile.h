@@ -19,6 +19,8 @@ public:
 	ORGFile( std::string filepath );
 	~ORGFile();
 
+	u32 GetAddress(std::string sectionName);
+
 private:
 	std::string m_filepath;
 
