@@ -113,6 +113,26 @@ void OMFFile::MapIntoMemory(ORGFile& org_file)
 
 	MiniAllocator heap(minAddress, alignment);
 
+	// Add all the fixed locations first, so we don't get conflicts between
+	// allocated segments, and forced address locations
+
+	for (int idx = 0; idx < m_sections.size(); ++idx)
+	{
+		OMFSection& section = m_sections[ idx ];
+
+		if (section.m_kind & 0x8000)  // skip Dynamic Sections
+			continue;
+
+		// If we defined an address pass it in
+		section.m_org = org_file.GetAddress(section.m_segname);
+
+		if (section.m_org)			  // skip sections with an ORG address
+		{
+			//$$JGA, perhaps just put them into the allocator for overlap checking
+			heap.AddAllocation(section.m_org, section.m_length);
+		}
+	}
+
 	// Allocate where in memory we're going to put all these allocations
 
 	for (int idx = 0; idx < m_sections.size(); ++idx)
@@ -122,13 +142,10 @@ void OMFFile::MapIntoMemory(ORGFile& org_file)
 		if (section.m_kind & 0x8000)  // skip Dynamic Sections
 			continue;
 
-		if (section.m_org)			  // skip sections with an ORG address
-		{
-			//$$JGA, perhaps just put them into the allocator for overlap checking
-			heap.AddAllocation(section.m_org, section.m_length);
-			continue;
-		}
-		else
+		// If we defined an address pass it in
+		section.m_org = org_file.GetAddress(section.m_segname);
+
+		if (!section.m_org)			  // skip sections with an ORG address
 		{
 			MiniAllocator::Allocation *pAllocation =
 				heap.Alloc(section.m_length, section.m_align);
