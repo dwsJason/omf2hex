@@ -49,6 +49,12 @@ public:
 		m_pStreamCurrent += sizeof(result);
 	}
 
+	void ReadBytes(u8* pDest, size_t numBytes)
+	{
+		memcpy(pDest, m_pStreamCurrent, numBytes);
+		m_pStreamCurrent += numBytes;
+	}
+
 	std::string ReadPString()
 	{
 		std::string result;

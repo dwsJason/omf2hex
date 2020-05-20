@@ -160,6 +160,11 @@ public:
 
 	void MapIntoMemory(ORGFile& org_file );
 
+	// Serialize and apply relocation data, into the m_pRAM
+	void LoadIntoMemory();
+
+	void SaveAsHex(std::string filepath);
+
 private:
 	std::string m_filepath;
 	std::vector<OMFSection> m_sections;

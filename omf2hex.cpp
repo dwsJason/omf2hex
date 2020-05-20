@@ -45,6 +45,13 @@ int main(int argc, char* argv[])
 
 		omf_file.MapIntoMemory( org_file );
 
+		omf_file.LoadIntoMemory();
+
+		if (pOutfilePath)
+		{
+			omf_file.SaveAsHex( pOutfilePath );
+		}
+
 	}
 	else
 	{
