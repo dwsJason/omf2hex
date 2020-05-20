@@ -178,6 +178,9 @@ u32 ORGFile::GetAddress(std::string sectionName)
 		}
 	}
 
+	// Make sure not case sensitive
+	tolower(sectionName);
+
 	for (int labelIndex = 0; labelIndex < m_sections.size(); ++labelIndex)
 	{
 		if (sectionName == m_sections[labelIndex])
