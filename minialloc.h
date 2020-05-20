@@ -2,8 +2,7 @@
 // minialloc, Dumb Mini Allocator Class
 // 
 // This is allocating segmented memory, so it's working with buckets of 64KB
-// it isn't going to give you memory that crosses bank boundaries, unless
-// you ask for a block larger than 64KB
+// it isn't going to give you memory that crosses bank boundaries
 // 
 // This doesn't have to be efficient, because:
 // 

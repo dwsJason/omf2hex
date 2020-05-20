@@ -36,12 +36,59 @@ MiniAllocator::~MiniAllocator()
 
 MiniAllocator::Allocation* MiniAllocator::Alloc( u32 sizeBytes )
 {
-	u32 address = 0;
+	MiniAllocator::Allocation* pResult = nullptr;
+	int address = 0;
+	i32 prev_available_address = 0;
+
+	// Just bail if the size is bigger than 64KB
+	if (sizeBytes > 0x10000)
+	{
+		return nullptr;
+	}
 
 	// Loop through the current list of m_allocations, looking for gaps
 	// return address in the first gap where we can fit our allocation
+	for (int idx = 0; idx < m_allocations.size(); ++idx)
+	{
+		i32 possible_size = m_allocations[idx]->address - prev_available_address;
 
+		if (possible_size > (i32)sizeBytes)
+		{
+			// See if it will fit here
+			u32 new_end_address = prev_available_address + sizeBytes - 1;
 
+			if ((new_end_address & 0xFF0000) == (prev_available_address & 0xFF0000))
+			{
+				// This spot looks good, but wait!, we have to make sure it's not
+				// in the reserved memory
+
+				int reserved_address_end = m_pReservedAllocation->address + m_pReservedAllocation->size;
+
+				if ((i32)new_end_address < reserved_address_end)
+				{
+					prev_available_address = reserved_address_end;
+					continue;
+				}
+
+				pResult = AddAllocation(prev_available_address, sizeBytes);
+				break;
+			}
+			else
+			{
+				// Try this one again
+				prev_available_address += 0x10000;
+				prev_available_address &= ~0xFFFF;
+				idx -= 1;
+				continue;
+			}
+		}
+		else
+		{
+			prev_available_address = m_allocations[idx]->address + m_allocations[idx]->size;
+		}
+	}
+
+	return pResult;
 }
 
 //------------------------------------------------------------------------------
@@ -53,7 +100,21 @@ MiniAllocator::Allocation* MiniAllocator::AddAllocation(u32 address, u32 sizeByt
 	pAlloc->address = address;
 	pAlloc->size    = sizeBytes;
 
-	m_allocations.push_back(pAlloc);
+	// Attempt to insert this in numerical order
+
+	size_t location_index = 0;
+
+	for (int idx = 0; idx < m_allocations.size(); ++idx)
+	{
+		if (address >= m_allocations[ idx ]->address)
+		{
+			location_index = idx;
+			break;
+		}
+
+	}
+
+	m_allocations.insert(m_allocations.begin() + location_index, 1, pAlloc);
 
 	return pAlloc;
 }
