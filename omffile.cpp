@@ -213,6 +213,17 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 
 	bool bDone = false;
 
+	/*
+	LCONST($F2)
+	DS($F1)
+	RELOC($E2)
+	INTERSEG ($E3)
+	cRELOC ($F5)
+	cINTERSEG ($F6)
+	SUPER($F7)
+	END($00)
+	*/
+
 	while (!bDone)
 	{
 		u8 opcode = ss.Read<u8>();
@@ -220,7 +231,7 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 		if (opcode >= 1 && opcode <= 0xDF)
 		{
 			printf("CONST\n");
-			bDone = true;
+			ss.SeekCurrent(opcode); // opcode is the size of the data
 		}
 		else
 		{
@@ -248,8 +259,15 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 				}
 				break;
 			case 0xE3:
-				printf("INTERSEG\n");
-				bDone = true;
+				{
+					u8 num_bytes = ss.Read<u8>();
+					i8 num_shift = ss.Read<i8>();
+					u32 offset1 = ss.Read<u32>(); // first byte to be relocated
+					u16 file_no = ss.Read<u16>();
+					u16 seg_no = ss.Read<u16>();
+					u32 offset2 = ss.Read<u32>(); // offset to routine being referenced
+					printf("INTERSEG\n");
+				}
 				break;
 			case 0xE4:
 				printf("USING\n");
@@ -296,8 +314,11 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 				bDone = true;
 				break;
 			case 0xF1:
-				printf("DS\n");
-				bDone = true;
+				{
+					// m_numlen should really be 4 here
+					printf("DS\n");   // number of zeros to insert here
+					ss.SeekCurrent(m_numlen);
+				}
 				break;
 			case 0xF2:
 				{
@@ -324,8 +345,15 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 				}
 				break;
 			case 0xF6:
-				printf("cINTERSEG\n");
-				bDone = true;
+				{
+					u8 num_bytes = ss.Read<u8>();
+					i8 num_shift = ss.Read<i8>();
+					u16 offset1 = ss.Read<u16>(); // first byte to be relocated
+					u16 file_no = ss.Read<u16>();
+					u16 seg_no = ss.Read<u16>();
+					u16 offset2 = ss.Read<u16>(); // offset to routine being referenced
+					printf("cINTERSEG\n");
+				}
 				break;
 			case 0xF7:
 				{
