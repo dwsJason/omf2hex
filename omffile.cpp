@@ -6,6 +6,7 @@
 
 #include "bctypes.h"
 #include "memstream.h"  // Jason's memory stream thing
+#include "minialloc.h"
 
 #include <stdio.h>
 
@@ -102,8 +103,19 @@ OMFFile::~OMFFile()
 
 //------------------------------------------------------------------------------
 
-void OMFFile::MapIntoMemory(const ORGFile& org_file)
+void OMFFile::MapIntoMemory(ORGFile& org_file)
 {
+	// All this does is cruise through, and make sure each segment has a valid
+	// ORG Address,  I'll have a separate method, actually put the payloads
+	// in memory, and patch them up
+	u32 minAddress = org_file.GetAddress(".autopack");
+	u32 alignment  = org_file.GetAddress(".alignment");
+
+	MiniAllocator heap(minAddress, alignment);
+
+
+
+
 
 }
 

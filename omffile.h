@@ -158,7 +158,7 @@ public:
 	OMFFile( std::string filepath );
 	~OMFFile();
 
-	void MapIntoMemory(const ORGFile& org_file );
+	void MapIntoMemory(ORGFile& org_file );
 
 private:
 	std::string m_filepath;

@@ -147,7 +147,7 @@ ORGFile::ORGFile( std::string filepath )
 		printf("ASMCODE org $30000\n");
 		printf("vectors org $FFF0\n");
 		printf("\n\nWhen this file doesn't exist, the converter will auto ORG\n");
-		printf("starting in bank $02\n");
+		printf("starting in bank $01\n");
 		printf("Special Auto Allocation Commands\n");
 		printf(".alignment org $100   ; Minimum alignment to allocate\n");
 		printf(".autopack org $20000  ; Allocator doesn't allocate below this address\n\n");
