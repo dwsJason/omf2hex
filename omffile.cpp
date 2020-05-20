@@ -359,7 +359,27 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 				{
 					u32 length = ss.Read<u32>();
 					printf("SUPER, size = %d\n", length);
-					ss.SeekCurrent(length); // Seek ahead to skip the data
+					{
+						// Super Compressed Relocation Data
+						u8 super_record_type = ss.Read<u8>();
+
+						if (0 == super_record_type)
+						{
+							printf("    SUPER RELOC2\n");
+
+						}
+						else if (1 == super_record_type)
+						{
+							printf("    SUPER RELOC3\n");
+						}
+						else
+						{
+							printf("    SUPER INTERSEG%d\n", super_record_type - 1);
+						}
+
+						ss.SeekCurrent(length-1); // Seek ahead to skip the data
+
+					}
 				}
 				break;
 			case 0xFB:
