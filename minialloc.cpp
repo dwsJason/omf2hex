@@ -17,7 +17,7 @@ MiniAllocator::MiniAllocator(u32 minAddress, u32 alignment)
 
 	if (m_minAddress)
 	{
-		m_pReservedAllocation = AddAllocation(0, minAddress);
+		m_pReservedAllocation = AddAllocation(0, m_minAddress);
 	}
 }
 
@@ -34,7 +34,7 @@ MiniAllocator::~MiniAllocator()
 }
 //------------------------------------------------------------------------------
 
-MiniAllocator::Allocation* MiniAllocator::Alloc( u32 sizeBytes )
+MiniAllocator::Allocation* MiniAllocator::Alloc( u32 sizeBytes, u32 alignment )
 {
 	MiniAllocator::Allocation* pResult = nullptr;
 	int address = 0;
@@ -44,6 +44,12 @@ MiniAllocator::Allocation* MiniAllocator::Alloc( u32 sizeBytes )
 	if (sizeBytes > 0x10000)
 	{
 		return nullptr;
+	}
+
+	// Forced alignment for the allocation
+	if (m_alignment > alignment)
+	{
+		alignment = m_alignment;
 	}
 
 	// Loop through the current list of m_allocations, looking for gaps
@@ -85,7 +91,27 @@ MiniAllocator::Allocation* MiniAllocator::Alloc( u32 sizeBytes )
 		else
 		{
 			prev_available_address = m_allocations[idx]->address + m_allocations[idx]->size;
+			prev_available_address = force_align(prev_available_address, alignment);
 		}
+	}
+
+	if (!pResult)
+	{
+		// Oh this is so dumb
+		u32 new_end_address = prev_available_address + sizeBytes - 1;
+
+		if ((new_end_address & 0xFF0000) == (prev_available_address & 0xFF0000))
+		{
+			// This spot looks good
+		}
+		else
+		{
+			// Go to the next bank
+			prev_available_address += 0x10000;
+			prev_available_address &= ~0xFFFF;
+		}
+
+		pResult = AddAllocation(prev_available_address, sizeBytes);
 	}
 
 	return pResult;
@@ -106,10 +132,15 @@ MiniAllocator::Allocation* MiniAllocator::AddAllocation(u32 address, u32 sizeByt
 
 	for (int idx = 0; idx < m_allocations.size(); ++idx)
 	{
-		if (address >= m_allocations[ idx ]->address)
+		if (address <= m_allocations[idx]->address)
 		{
 			location_index = idx;
 			break;
+		}
+
+		if (address > m_allocations[idx]->address)
+		{
+			location_index = idx+1;
 		}
 
 	}
@@ -170,6 +201,19 @@ std::vector<MiniAllocator::Allocation*> MiniAllocator::FindOverlaps(Allocation* 
 	}
 
 	return result;
+}
+
+//------------------------------------------------------------------------------
+
+u32 MiniAllocator::force_align(u32 address, u32 alignment)
+{
+	if (alignment)
+	{
+		address += (alignment-1);
+		address &= ~(alignment-1);
+	}
+
+	return address;
 }
 
 //------------------------------------------------------------------------------

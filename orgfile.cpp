@@ -172,9 +172,9 @@ u32 ORGFile::GetAddress(std::string sectionName)
 
 	if (strEnd != std::string::npos)
 	{
-		if (strEnd != sectionName.length())
+		if ((strEnd+1) != sectionName.length())
 		{
-			sectionName.resize(strEnd);
+			sectionName.resize(strEnd+1);
 		}
 	}
 

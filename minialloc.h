@@ -29,7 +29,7 @@ public:
 	MiniAllocator(u32 minAddress, u32 alignment);
 	~MiniAllocator();
 
-	Allocation* Alloc( u32 sizeBytes );
+	Allocation* Alloc( u32 sizeBytes, u32 alignment=0 );
 
 	Allocation* AddAllocation(u32 address, u32 sizeBytes);
 
@@ -38,6 +38,8 @@ public:
 private:
 
 	bool overlaps(Allocation* allocation, u32 address, u32 sizeBytes);
+	u32 force_align(u32 address, u32 alignment);
+
 
 	u32 m_minAddress;
 	u32 m_alignment;

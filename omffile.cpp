@@ -113,9 +113,46 @@ void OMFFile::MapIntoMemory(ORGFile& org_file)
 
 	MiniAllocator heap(minAddress, alignment);
 
+	// Allocate where in memory we're going to put all these allocations
 
+	for (int idx = 0; idx < m_sections.size(); ++idx)
+	{
+		OMFSection& section = m_sections[ idx ];
 
+		if (section.m_kind & 0x8000)  // skip Dynamic Sections
+			continue;
 
+		if (section.m_org)			  // skip sections with an ORG address
+		{
+			//$$JGA, perhaps just put them into the allocator for overlap checking
+			heap.AddAllocation(section.m_org, section.m_length);
+			continue;
+		}
+		else
+		{
+			MiniAllocator::Allocation *pAllocation =
+				heap.Alloc(section.m_length, section.m_align);
+
+			if (pAllocation)
+			{
+				section.m_org = pAllocation->address;
+			}
+		}
+	}
+
+	// Summarize where stuff is loaded into memory
+	// Printf the memory map
+	printf("segment(##) address length segname\n");
+	printf("----------------------------------\n");
+	for (int idx = 0; idx < m_sections.size(); ++idx)
+	{
+		OMFSection& section = m_sections[ idx ];
+
+		if (section.m_kind & 0x8000)  // skip Dynamic Sections
+			continue;
+
+		printf("segment(%2d) $%06x $%04x  %s\n", section.m_segnum, section.m_org, section.m_length, section.m_segname.c_str());
+	}
 
 }
 
