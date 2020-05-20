@@ -42,6 +42,9 @@ int main(int argc, char* argv[])
 
 		// Cache the raw OMF File
 		OMFFile omf_file( pInfilePath );
+
+		omf_file.MapIntoMemory( org_file );
+
 	}
 	else
 	{

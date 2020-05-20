@@ -11,6 +11,10 @@
 #include "bctypes.h"
 #include "memstream.h"
 
+// Forward references
+
+class ORGFile;
+
 //------------------------------------------------------------------------------
 
 
@@ -154,13 +158,18 @@ public:
 	OMFFile( std::string filepath );
 	~OMFFile();
 
+	void MapIntoMemory(const ORGFile& org_file );
+
 private:
 	std::string m_filepath;
 	std::vector<OMFSection> m_sections;
 
 	u8* m_pRawData;
 
+	// 16 megabytes of 65816 flat memory space
 	u8* m_pRAM;
+
+
 
 };
 

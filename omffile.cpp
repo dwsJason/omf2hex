@@ -2,11 +2,13 @@
 // omffile.cpp
 //
 #include "omffile.h"
+#include "orgfile.h"
 
 #include "bctypes.h"
 #include "memstream.h"  // Jason's memory stream thing
 
 #include <stdio.h>
+
 
 // -----------------------------------------------------------------------------
 
@@ -20,7 +22,8 @@ static std::string FixedLabelToString( u8* pLabel, size_t numBytes )
 	result.insert(0, (char*)pLabel, numBytes);
 	return result;
 }
-// -----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
 
 //------------------------------------------------------------------------------
 OMFFile::OMFFile( std::string filepath )
@@ -96,6 +99,14 @@ OMFFile::~OMFFile()
 		m_pRawData = nullptr;
 	}
 }
+
+//------------------------------------------------------------------------------
+
+void OMFFile::MapIntoMemory(const ORGFile& org_file)
+{
+
+}
+
 //------------------------------------------------------------------------------
 
 // OMF Section Sub Object
@@ -357,28 +368,82 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 				break;
 			case 0xF7:
 				{
-					u32 length = ss.Read<u32>();
+					i32 length = ss.Read<i32>();
 					printf("SUPER, size = %d\n", length);
 					{
 						// Super Compressed Relocation Data
-						u8 super_record_type = ss.Read<u8>();
+						u8 super_record_type = ss.Read<u8>(); length--;
 
 						if (0 == super_record_type)
 						{
-							printf("    SUPER RELOC2\n");
+							printf("    SUPER RELOC2 (2 bytes patch)\n");
 
 						}
 						else if (1 == super_record_type)
 						{
-							printf("    SUPER RELOC3\n");
+							printf("    SUPER RELOC3 (3 bytes patch)\n");
 						}
 						else
 						{
 							printf("    SUPER INTERSEG%d\n", super_record_type - 1);
+
+							int super_interseg_type = super_record_type - 1;
+
+							if ((super_interseg_type >= 1) && (super_interseg_type<=12))
+							{
+								printf("    fileNo=%d, shift=0, patchsize=3 bytes\n", super_interseg_type);
+							}
+							if ((super_interseg_type >= 13) && (super_interseg_type<=24))
+							{
+								printf("    segmentNo=%d, shift=0, patchsize=2 bytes\n", super_interseg_type-12);
+							}
+							if ((super_interseg_type >= 25) && (super_interseg_type<=36))
+							{
+								printf("    segmentNo=%d, shift=-16, patchsize=2 bytes\n", super_interseg_type-24);
+							}
+
 						}
 
-						ss.SeekCurrent(length-1); // Seek ahead to skip the data
+						//ss.SeekCurrent(length-1); // Seek ahead to skip the data
+						u16 address = 0;
+						while (length > 0)
+						{
+							u8 num_patches = ss.Read<u8>(); length--;
 
+							//if (0==length)
+							//{
+							//	printf("$%02x: Incomplete patch record, discard\n", num_patches);
+							//	break;
+							//}
+
+							if (num_patches & 0x80)
+							{
+								// Address Skip
+								u16 skip_amount = ((u16)(num_patches & 0x7F))<<8;
+								printf("$%02x: skip from $%04x to $%04x\n", num_patches, address, address+skip_amount);
+								address += skip_amount;
+							}
+							else
+							{
+								printf("$%02x: page $%04x contains %d patches\n", num_patches, address, num_patches+1);
+								int patch_counter = num_patches;
+								while (patch_counter>=0)
+								{
+									patch_counter--;
+									u8 offset = ss.Read<u8>(); length--;
+									printf("%02x ", offset);
+								}
+								printf("\n");
+								address += 0x100;
+							}
+
+						}
+
+						if (length != 0)
+						{
+							printf("PROBLEM DECODING SUPERCOMPRESSED SEG, length = %d\n", length);
+							bDone = true;
+						}
 					}
 				}
 				break;
