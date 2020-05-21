@@ -119,9 +119,9 @@ void OMFFile::LoadIntoMemory()
 	// is allocated, but in theory, we don't need to do this, because
 	// we're going to write out the data from each section, in a proper way
 
-	for (int idx = 0; idx < m_sections.size(); ++idx)
+	for (int sectionIndex = 0; sectionIndex < m_sections.size(); ++sectionIndex)
 	{
-		OMFSection& section = m_sections[ idx ];
+		OMFSection& section = m_sections[ sectionIndex ];
 
 		if (section.m_kind & 0x8000)  // skip Dynamic Sections
 			continue;
@@ -144,7 +144,6 @@ void OMFFile::LoadIntoMemory()
 		// Jump over to the Body
 		ss.SeekSet(section.m_dispdata);
 
-
 		switch (section.m_kind & 0x1F)
 		{
 		case 0: // code segment
@@ -158,6 +157,7 @@ void OMFFile::LoadIntoMemory()
 			}
 		}
 
+		printf("LoadIntoMemory segment(%d), %s\n", section.m_segnum, section.m_segname.c_str());
 
 		/* 
 		CONST($1-$DF) 
@@ -174,186 +174,172 @@ void OMFFile::LoadIntoMemory()
 		bool bDone = false;
 
 		// A pointer to where we're loading the constant data
-		u8* pMemBase = m_pRawData + section.m_org;
+		u8* pMemBase = m_pRAM + section.m_org;
 
 		// Clear the memory that we're loading into (so we don't have to honor the m_resspec)
 		memset(pMemBase, 0, section.m_length);
+
 
 		u8* pMem = pMemBase;	// pointer we can increment, with operations
 
 		while (!bDone)
 		{
 			u8 opcode = ss.Read<u8>();
-
-			if (opcode >= 1 && opcode <= 0xDF)
+			
+			switch (opcode)
 			{
-				printf("CONST $%02x bytes\n", opcode);
-				ss.ReadBytes(pMem, opcode);
-				for (int idx = 0; idx < opcode; ++idx)
+			case 0: //end
+				printf("END\n");
+				bDone = true;
+				break;
+			case 0xE2:
 				{
-					printf("%02X ", pMem[idx]);
+					printf("RELOC\n");
+					u8 num_bytes_to_relocate = ss.Read<u8>(); //(1,2,3 or 4)
+					i8 shift_count   = ss.Read<i8>();
+					u32 first_offset = ss.Read<u32>(); // where to patch
+					u32 ref_offset   = ss.Read<u32>();   // value to patch with
 				}
-				printf("\n");
-				pMem += opcode;
-			}
-			else
-			{
-				switch (opcode)
+				break;
+			case 0xE3:
 				{
-				case 0: //end
-					printf("END\n");
-					bDone = true;
-					break;
-				case 0xE2:
+					u8 num_bytes = ss.Read<u8>();
+					i8 num_shift = ss.Read<i8>();
+					u32 offset1  = ss.Read<u32>(); // first byte to be relocated
+					u16 file_no  = ss.Read<u16>();
+					u16 seg_no   = ss.Read<u16>();
+					u32 offset2  = ss.Read<u32>(); // offset to routine being referenced
+					printf("INTERSEG\n");
+				}
+				break;
+			case 0xF1:
+				{
+					// m_numlen should really be 4 here
+					//assert(4==section.m_numlen);
+					u32 num_zeros = ss.Read<u32>();
+					printf("DS %d bytes\n", num_zeros);
+					pMem += num_zeros;	// We already cleared the whole segment load memory to zero
+				}
+				break;
+			case 0xF2:
+				{
+					u32 count = ss.Read<u32>();
+					printf("LCONST, size = %d\n", count);
+					ss.SeekCurrent(count); // Seek ahead to skip the data
+				}
+				break;
+			case 0xF5:
+				{
+					u8 num_bytes_to_relocate = ss.Read<u8>();
+					i8 shift_count = ss.Read<i8>();
+					u16 first_offset = ss.Read<u16>();
+					u16 ref_offset = ss.Read<u16>();
+					printf("cRELOC\n");
+				}
+				break;
+			case 0xF6:
+				{
+					u8 num_bytes = ss.Read<u8>();
+					i8 num_shift = ss.Read<i8>();
+					u16 offset1 = ss.Read<u16>(); // first byte to be relocated
+					//u16 file_no = ss.Read<u16>();
+					u8 seg_no = ss.Read<u8>();
+					u16 offset2 = ss.Read<u16>(); // offset to routine being referenced
+					printf("cINTERSEG\n");
+				}
+				break;
+			case 0xF7:
+				{
+					i32 length = ss.Read<i32>();
+					printf("SUPER, size = %d\n", length);
 					{
-						printf("RELOC\n");
-						u8 num_bytes_to_relocate = ss.Read<u8>(); //(1,2,3 or 4)
-						i8 shift_count = ss.Read<i8>();
-						u32 first_offset = ss.Read<u32>(); // where to patch
-						u32 ref_offset = ss.Read<u32>();   // value to patch with
-					}
-					break;
-				case 0xE3:
-					{
-						u8 num_bytes = ss.Read<u8>();
-						i8 num_shift = ss.Read<i8>();
-						u32 offset1 = ss.Read<u32>(); // first byte to be relocated
-						u16 file_no = ss.Read<u16>();
-						u16 seg_no = ss.Read<u16>();
-						u32 offset2 = ss.Read<u32>(); // offset to routine being referenced
-						printf("INTERSEG\n");
-					}
-					break;
-				case 0xF1:
-					{
-						// m_numlen should really be 4 here
-						//assert(4==section.m_numlen);
-						u32 num_zeros = ss.Read<u32>();
-						printf("DS %d bytes\n", num_zeros);
-						pMem += num_zeros;	// We already cleared the whole segment load memory to zero
-					}
-					break;
-				case 0xF2:
-					{
-						u32 count = ss.Read<u32>();
-						printf("LCONST, size = %d\n", count);
-						ss.SeekCurrent(count); // Seek ahead to skip the data
-					}
-					break;
-				case 0xF5:
-					{
-						u8 num_bytes_to_relocate = ss.Read<u8>();
-						i8 shift_count = ss.Read<i8>();
-						u16 first_offset = ss.Read<u16>();
-						u16 ref_offset = ss.Read<u16>();
-						printf("cRELOC\n");
-					}
-					break;
-				case 0xF6:
-					{
-						u8 num_bytes = ss.Read<u8>();
-						i8 num_shift = ss.Read<i8>();
-						u16 offset1 = ss.Read<u16>(); // first byte to be relocated
-						u16 file_no = ss.Read<u16>();
-						u16 seg_no = ss.Read<u16>();
-						u16 offset2 = ss.Read<u16>(); // offset to routine being referenced
-						printf("cINTERSEG\n");
-					}
-					break;
-				case 0xF7:
-					{
-						i32 length = ss.Read<i32>();
-						printf("SUPER, size = %d\n", length);
+						// Super Compressed Relocation Data
+						u8 super_record_type = ss.Read<u8>(); length--;
+
+						if (0 == super_record_type)
 						{
-							// Super Compressed Relocation Data
-							u8 super_record_type = ss.Read<u8>(); length--;
+							printf("    SUPER RELOC2 (2 bytes patch)\n");
 
-							if (0 == super_record_type)
+						}
+						else if (1 == super_record_type)
+						{
+							printf("    SUPER RELOC3 (3 bytes patch)\n");
+						}
+						else
+						{
+							printf("    SUPER INTERSEG%d\n", super_record_type - 1);
+
+							int super_interseg_type = super_record_type - 1;
+
+							if ((super_interseg_type >= 1) && (super_interseg_type<=12))
 							{
-								printf("    SUPER RELOC2 (2 bytes patch)\n");
-
+								printf("    fileNo=%d, shift=0, patchsize=3 bytes\n", super_interseg_type);
 							}
-							else if (1 == super_record_type)
+							if ((super_interseg_type >= 13) && (super_interseg_type<=24))
 							{
-								printf("    SUPER RELOC3 (3 bytes patch)\n");
+								printf("    segmentNo=%d, shift=0, patchsize=2 bytes\n", super_interseg_type-12);
+							}
+							if ((super_interseg_type >= 25) && (super_interseg_type<=36))
+							{
+								printf("    segmentNo=%d, shift=-16, patchsize=2 bytes\n", super_interseg_type-24);
+							}
+
+						}
+
+						//ss.SeekCurrent(length-1); // Seek ahead to skip the data
+						u16 address = 0;
+						while (length > 0)
+						{
+							u8 num_patches = ss.Read<u8>(); length--;
+
+							//if (0==length)
+							//{
+							//	printf("$%02x: Incomplete patch record, discard\n", num_patches);
+							//	break;
+							//}
+
+							if (num_patches & 0x80)
+							{
+								// Address Skip
+								u16 skip_amount = ((u16)(num_patches & 0x7F))<<8;
+								printf("$%02x: skip from $%04x to $%04x\n", num_patches, address, address+skip_amount);
+								address += skip_amount;
 							}
 							else
 							{
-								printf("    SUPER INTERSEG%d\n", super_record_type - 1);
-
-								int super_interseg_type = super_record_type - 1;
-
-								if ((super_interseg_type >= 1) && (super_interseg_type<=12))
+								printf("$%02x: page $%04x contains %d patches\n", num_patches, address, num_patches+1);
+								int patch_counter = num_patches;
+								while (patch_counter>=0)
 								{
-									printf("    fileNo=%d, shift=0, patchsize=3 bytes\n", super_interseg_type);
+									patch_counter--;
+									u8 offset = ss.Read<u8>(); length--;
+									printf("%02x ", offset);
 								}
-								if ((super_interseg_type >= 13) && (super_interseg_type<=24))
-								{
-									printf("    segmentNo=%d, shift=0, patchsize=2 bytes\n", super_interseg_type-12);
-								}
-								if ((super_interseg_type >= 25) && (super_interseg_type<=36))
-								{
-									printf("    segmentNo=%d, shift=-16, patchsize=2 bytes\n", super_interseg_type-24);
-								}
-
+								printf("\n");
+								address += 0x100;
 							}
 
-							//ss.SeekCurrent(length-1); // Seek ahead to skip the data
-							u16 address = 0;
-							while (length > 0)
-							{
-								u8 num_patches = ss.Read<u8>(); length--;
+						}
 
-								//if (0==length)
-								//{
-								//	printf("$%02x: Incomplete patch record, discard\n", num_patches);
-								//	break;
-								//}
-
-								if (num_patches & 0x80)
-								{
-									// Address Skip
-									u16 skip_amount = ((u16)(num_patches & 0x7F))<<8;
-									printf("$%02x: skip from $%04x to $%04x\n", num_patches, address, address+skip_amount);
-									address += skip_amount;
-								}
-								else
-								{
-									printf("$%02x: page $%04x contains %d patches\n", num_patches, address, num_patches+1);
-									int patch_counter = num_patches;
-									while (patch_counter>=0)
-									{
-										patch_counter--;
-										u8 offset = ss.Read<u8>(); length--;
-										printf("%02x ", offset);
-									}
-									printf("\n");
-									address += 0x100;
-								}
-
-							}
-
-							if (length != 0)
-							{
-								printf("PROBLEM DECODING SUPERCOMPRESSED SEG, length = %d\n", length);
-								bDone = true;
-							}
+						if (length != 0)
+						{
+							printf("PROBLEM DECODING SUPERCOMPRESSED SEG, length = %d\n", length);
+							bDone = true;
 						}
 					}
-					break;
-
-				default:
-					printf("$$ERROR\n");
-					printf("OMFFile::LoadIntoMemory - segment(%d), %s\n", section.m_segnum, section.m_segname.c_str());
-					printf("Unsupported opcode $%02x\n", opcode);
-					exit(1);
-					bDone = true;
-					break;
 				}
+				break;
+
+			default:
+				printf("$$ERROR\n");
+				printf("OMFFile::LoadIntoMemory - segment(%d), %s\n", section.m_segnum, section.m_segname.c_str());
+				printf("Unsupported opcode $%02x\n", opcode);
+				exit(1);
+				bDone = true;
+				break;
 			}
 		}
 	}
-
 }
 //------------------------------------------------------------------------------
 
@@ -493,6 +479,7 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 	// Seek to the data
 	ss.SeekSet(stream_start + m_dispdata);
 
+#if 0 // Debug Stuff for fun
 	// Let's print out body information here, just to see if we can parse it
 	// Body Record List
 	if (m_kind & 0x8000)
@@ -585,9 +572,9 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 				{
 					printf("RELOC\n");
 					u8 num_bytes_to_relocate = ss.Read<u8>();
-					i8 shift_count = ss.Read<i8>();
+					i8 shift_count   = ss.Read<i8>();
 					u32 first_offset = ss.Read<u32>();
-					u32 ref_offset = ss.Read<u32>();
+					u32 ref_offset   = ss.Read<u32>();
 				}
 				break;
 			case 0xE3:
@@ -681,8 +668,8 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 					u8 num_bytes = ss.Read<u8>();
 					i8 num_shift = ss.Read<i8>();
 					u16 offset1 = ss.Read<u16>(); // first byte to be relocated
-					u16 file_no = ss.Read<u16>();
-					u16 seg_no = ss.Read<u16>();
+					//u16 file_no = ss.Read<u16>();
+					u8 seg_no = ss.Read<u8>();
 					u16 offset2 = ss.Read<u16>(); // offset to routine being referenced
 					printf("cINTERSEG\n");
 				}
@@ -787,6 +774,7 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 			}
 		}
 	}
+#endif
 }
 
 //------------------------------------------------------------------------------
