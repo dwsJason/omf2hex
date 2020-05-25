@@ -160,15 +160,14 @@ void OMFFile::LoadIntoMemory()
 		printf("LoadIntoMemory segment(%d), %s\n", section.m_segnum, section.m_segname.c_str());
 
 		/* 
-		CONST($1-$DF) 
-		LCONST($F2)
-		DS($F1)
+		LCONST($F2)     // done
+		DS($F1) 		// done
 		RELOC($E2)
 		INTERSEG ($E3)
 		cRELOC ($F5)
 		cINTERSEG ($F6)
 		SUPER($F7)
-		END($00)
+		END($00)		// done
 		*/
 
 		bool bDone = false;
@@ -177,8 +176,8 @@ void OMFFile::LoadIntoMemory()
 		u8* pMemBase = m_pRAM + section.m_org;
 
 		// Clear the memory that we're loading into (so we don't have to honor the m_resspec)
+		// or even worry about implementing DS command
 		memset(pMemBase, 0, section.m_length);
-
 
 		u8* pMem = pMemBase;	// pointer we can increment, with operations
 
@@ -194,7 +193,8 @@ void OMFFile::LoadIntoMemory()
 				break;
 			case 0xE2:
 				{
-					printf("RELOC\n");
+					printf("RELOC - unimplremented\n");
+					exit(2);
 					u8 num_bytes_to_relocate = ss.Read<u8>(); //(1,2,3 or 4)
 					i8 shift_count   = ss.Read<i8>();
 					u32 first_offset = ss.Read<u32>(); // where to patch
@@ -209,7 +209,8 @@ void OMFFile::LoadIntoMemory()
 					u16 file_no  = ss.Read<u16>();
 					u16 seg_no   = ss.Read<u16>();
 					u32 offset2  = ss.Read<u32>(); // offset to routine being referenced
-					printf("INTERSEG\n");
+					printf("INTERSEG - unimplemented \n");
+					exit(2);
 				}
 				break;
 			case 0xF1:
@@ -223,18 +224,103 @@ void OMFFile::LoadIntoMemory()
 				break;
 			case 0xF2:
 				{
-					u32 count = ss.Read<u32>();
-					printf("LCONST, size = %d\n", count);
-					ss.SeekCurrent(count); // Seek ahead to skip the data
+					u32 numBytes = ss.Read<u32>();
+					u32 address = (u32)(pMem - m_pRAM);
+					printf("Load LCONST, size = %d, at %06X\n", numBytes, address);
+					ss.ReadBytes(pMem, numBytes);
+					pMem += numBytes;
 				}
 				break;
 			case 0xF5:
 				{
-					u8 num_bytes_to_relocate = ss.Read<u8>();
-					i8 shift_count = ss.Read<i8>();
+					u8 num_bytes = ss.Read<u8>();
+					i8 num_shift = ss.Read<i8>();
 					u16 first_offset = ss.Read<u16>();
 					u16 ref_offset = ss.Read<u16>();
-					printf("cRELOC\n");
+					printf("cRELOC - unimplemented\n");
+
+					switch (num_bytes)
+					{
+					case 1:
+						{
+						u32 segmentOffset = first_offset;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = ref_offset;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
+							printf("cRELOC Shift %d, %02x patched to %02x\n", num_shift, source_address&0xFF, patch_result&0xFF);
+						}
+						break;
+					case 2:
+						{
+							u32 segmentOffset = first_offset;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = ref_offset;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
+							pMemBase[ segmentOffset+1 ] = (patch_result>>8) & 0xFF;
+							printf("cRELOC Shift %d, %04x patched to %04x\n", num_shift, source_address&0xFFFF, patch_result&0xFFFF);
+						}
+						break;
+					case 3:
+						{
+							u32 segmentOffset = first_offset;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = ref_offset;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+							printf("cRELOC Shift %d, %06x patched to %06x\n", num_shift, source_address&0xFFFFFF, patch_result&0xFFFFFF);
+						}
+						break;
+					case 4:
+						{
+							u32 segmentOffset = first_offset;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = ref_offset;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+							pMemBase[ segmentOffset+4 ] = (patch_result>>24) & 0xFF;
+							printf("cRELOC Shift %d, %08x patched to %08x\n", num_shift, source_address, patch_result);
+						}
+						break;
+					default:
+						printf("cINTERSEG num_bytes=%d\n", num_bytes);
+						printf("unimplemented\n");
+						exit(2);
+					}
+
 				}
 				break;
 			case 0xF6:
@@ -245,13 +331,98 @@ void OMFFile::LoadIntoMemory()
 					//u16 file_no = ss.Read<u16>();
 					u8 seg_no = ss.Read<u8>();
 					u16 offset2 = ss.Read<u16>(); // offset to routine being referenced
-					printf("cINTERSEG\n");
+					//printf("cINTERSEG - unimplemented\n");
+					switch (num_bytes)
+					{
+					case 1:
+						{
+							u32 segmentOffset = offset1;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = offset2+m_sections[ seg_no-1 ].m_org;
+							patch_result += offset2;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
+							printf("cINTERSEG Shift %d, %02x patched to %02x\n", num_shift, source_address&0xFF, patch_result&0xFF);
+						}
+						break;
+					case 2:
+						{
+							u32 segmentOffset = offset1;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = offset2+m_sections[ seg_no-1 ].m_org;
+							patch_result += offset2;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
+							pMemBase[ segmentOffset+1 ] = (patch_result>>8) & 0xFF;
+							printf("cINTERSEG Shift %d, %04x patched to %04x\n", num_shift, source_address&0xFFFF, patch_result&0xFFFF);
+						}
+						break;
+					case 3:
+						{
+							u32 segmentOffset = offset1;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = offset2+m_sections[ seg_no-1 ].m_org;
+							patch_result += offset2;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+							printf("cINTERSEG Shift %d, %06x patched to %06x\n", num_shift, source_address&0xFFFFFF, patch_result&0xFFFFFF);
+						}
+						break;
+					case 4:
+						{
+							u32 segmentOffset = offset1;
+							u32 source_address = section.m_org + segmentOffset;
+							u32 patch_result = offset2+m_sections[ seg_no-1 ].m_org;
+							patch_result += offset2;
+							if (num_shift >= 0)
+							{
+								patch_result <<= num_shift;
+							}
+							else
+							{
+								patch_result >>= (-num_shift);
+							}
+							pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+							pMemBase[ segmentOffset+3 ] = (patch_result>>24) & 0xFF;
+							printf("cINTERSEG Shift %d, %08x patched to %08x\n", num_shift, source_address, patch_result);
+						}
+						break;
+					default:
+						printf("cINTERSEG num_bytes=%d\n", num_bytes);
+						printf("unimplemented\n");
+						exit(2);
+					}
 				}
 				break;
 			case 0xF7:
 				{
 					i32 length = ss.Read<i32>();
-					printf("SUPER, size = %d\n", length);
+					printf("SUPER Compressed, size = %d\n", length);
 					{
 						// Super Compressed Relocation Data
 						u8 super_record_type = ss.Read<u8>(); length--;
@@ -259,11 +430,12 @@ void OMFFile::LoadIntoMemory()
 						if (0 == super_record_type)
 						{
 							printf("    SUPER RELOC2 (2 bytes patch)\n");
-
+							// Shift 0, and relocate 2 bytes
 						}
 						else if (1 == super_record_type)
 						{
 							printf("    SUPER RELOC3 (3 bytes patch)\n");
+							// Shift 0, and relocate 3 bytes
 						}
 						else
 						{
@@ -286,23 +458,16 @@ void OMFFile::LoadIntoMemory()
 
 						}
 
-						//ss.SeekCurrent(length-1); // Seek ahead to skip the data
 						u16 address = 0;
 						while (length > 0)
 						{
 							u8 num_patches = ss.Read<u8>(); length--;
 
-							//if (0==length)
-							//{
-							//	printf("$%02x: Incomplete patch record, discard\n", num_patches);
-							//	break;
-							//}
-
 							if (num_patches & 0x80)
 							{
 								// Address Skip
 								u16 skip_amount = ((u16)(num_patches & 0x7F))<<8;
-								printf("$%02x: skip from $%04x to $%04x\n", num_patches, address, address+skip_amount);
+								//printf("$%02x: skip from $%04x to $%04x\n", num_patches, address, address+skip_amount);
 								address += skip_amount;
 							}
 							else
@@ -313,7 +478,95 @@ void OMFFile::LoadIntoMemory()
 								{
 									patch_counter--;
 									u8 offset = ss.Read<u8>(); length--;
-									printf("%02x ", offset);
+									//printf("%02x ", offset);
+									// Super dumb inline, patch the code stuff here
+									{
+										if (0 == super_record_type)
+										{
+											u32 segmentOffset = address + offset;
+
+											u32 source_address = pMemBase[ segmentOffset+0 ];
+											    source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
+
+											u32 patch_result = source_address + section.m_org;
+
+											pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+											pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+
+											printf("SUPERRELOC2: %04x patched to %04x\n", source_address, patch_result);
+										}
+										else if (1 == super_record_type)
+										{
+											u32 segmentOffset = address + offset;
+
+											u32 source_address = pMemBase[ segmentOffset+0 ];
+											    source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
+												source_address|= ((u32)pMemBase[ segmentOffset+2 ]) << 16;
+
+											u32 patch_result = source_address + section.m_org;
+
+											pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+											pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+											pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+
+											printf("SUPERRELOC3: %06x patched to %06x\n", source_address, patch_result);
+										}
+										else
+										{
+											printf("    SUPER INTERSEG%d\n", super_record_type - 1);
+
+											int super_interseg_type = super_record_type - 1;
+
+											if ((super_interseg_type >= 1) && (super_interseg_type<=12))
+											{
+												printf("    fileNo=%d, shift=0, patchsize=3 bytes\n", super_interseg_type);
+												u32 segmentOffset = address + offset;
+
+												u32 source_address = pMemBase[ segmentOffset+0 ];
+													source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
+
+												u32 patch_result = source_address + m_sections[ super_interseg_type-24-1 ].m_org;
+
+												pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+												pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+												pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+
+											}
+											if ((super_interseg_type >= 13) && (super_interseg_type<=24))
+											{
+												printf("    segmentNo=%d, shift=0, patchsize=2 bytes\n", super_interseg_type-12);
+
+												u32 segmentOffset = address + offset;
+
+												u32 source_address = pMemBase[ segmentOffset+0 ];
+													source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
+
+												u32 patch_result = source_address + m_sections[ super_interseg_type-24-1 ].m_org;
+
+												pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+												pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+
+											}
+											if ((super_interseg_type >= 25) && (super_interseg_type<=36))
+											{
+												printf("    segmentNo=%d, shift=-16, patchsize=2 bytes\n", super_interseg_type-24);
+
+												u32 segmentOffset = address + offset;
+
+												u32 source_address = pMemBase[ segmentOffset+0 ];
+													source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
+
+												u32 patch_result = source_address + m_sections[ super_interseg_type-24-1 ].m_org;
+
+												patch_result>>=16;
+
+												pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
+												pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
+											}
+										}
+
+									}
+
 								}
 								printf("\n");
 								address += 0x100;
