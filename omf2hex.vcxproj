@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="hexfile.cpp" />
     <ClCompile Include="minialloc.cpp" />
     <ClCompile Include="omf2hex.cpp" />
     <ClCompile Include="omffile.cpp" />
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bctypes.h" />
+    <ClInclude Include="hexfile.h" />
     <ClInclude Include="memstream.h" />
     <ClInclude Include="minialloc.h" />
     <ClInclude Include="omffile.h" />

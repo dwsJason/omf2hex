@@ -27,6 +27,9 @@
     <ClCompile Include="minialloc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="hexfile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="omffile.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="minialloc.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hexfile.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

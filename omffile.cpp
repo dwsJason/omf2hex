@@ -2,6 +2,7 @@
 // omffile.cpp
 //
 #include "omffile.h"
+#include "hexfile.h"
 #include "orgfile.h"
 
 #include "bctypes.h"
@@ -105,6 +106,53 @@ OMFFile::~OMFFile()
 
 void OMFFile::SaveAsHex(std::string filepath)
 {
+	// Step 1, build a memory address sorted list of the segments, to make
+	// the output as small as possible
+
+	std::vector<OMFSection*> sections;
+
+	for (int idx = 0; idx < m_sections.size(); ++idx)
+	{
+		OMFSection* pSection = &m_sections[ idx ];
+
+		if (pSection->m_kind & 0x8000)   // Skip Dynamic Sections
+			continue;
+
+
+		int insert_index = 0;
+
+		for (;insert_index < sections.size(); ++insert_index)
+		{
+			if (sections[ insert_index ]->m_org > pSection->m_org)
+				break;
+		}
+
+		sections.insert(sections.begin()+insert_index, pSection);
+	}
+
+	#if 0
+	{
+		for (int idx = 0; idx < sections.size(); ++idx)
+		{
+			printf("%2d %06x\n", idx, sections[idx]->m_org);
+		}
+	}
+	#endif
+
+	// Step 2, create hex file object
+
+	HexFile hex( filepath );
+
+	// Step 3, serialize
+
+	for (int idx = 0; idx < sections.size(); ++idx)
+	{
+		OMFSection* pSection = sections[ idx ];
+		// Chunk of bytes not allowed to cross bank boundary
+		hex.SaveBytes(m_pRAM, pSection->m_org, pSection->m_length);
+	}
+
+	hex.EndOfFile();
 
 }
 
