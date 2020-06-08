@@ -573,7 +573,7 @@ void OMFFile::LoadIntoMemory()
 												u32 source_address = pMemBase[ segmentOffset+0 ];
 													source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
 
-												u32 patch_result = source_address + m_sections[ super_interseg_type-24-1 ].m_org;
+												u32 patch_result = source_address + m_sections[ super_interseg_type-1 ].m_org;
 
 												pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
 												pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
@@ -589,7 +589,7 @@ void OMFFile::LoadIntoMemory()
 												u32 source_address = pMemBase[ segmentOffset+0 ];
 													source_address|= ((u32)pMemBase[ segmentOffset+1 ]) << 8;
 
-												u32 patch_result = source_address + m_sections[ super_interseg_type-24-1 ].m_org;
+												u32 patch_result = source_address + m_sections[ super_interseg_type-12-1 ].m_org;
 
 												pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
 												pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
