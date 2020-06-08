@@ -774,7 +774,17 @@ OMFSection::OMFSection(MemoryStream sectionStream)
 	m_loadname = FixedLabelToString( tempLoadName, sizeof(tempLoadName) );
 //	printf("m_loadname = %s\n", m_loadname.c_str());
 
-	m_segname = ss.ReadPString();
+	if (m_lablen)
+	{
+		u8 tempName[ 256 ];
+		memset(tempName, 0, sizeof(tempName));
+		ss.ReadBytes(tempName, m_lablen);
+		m_segname = (char*)tempName;
+	}
+	else
+	{
+		m_segname = ss.ReadPString();
+	}
 	printf("m_segname = %s\n", m_segname.c_str());
 
 	// Seek to the data
