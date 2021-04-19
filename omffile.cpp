@@ -148,7 +148,6 @@ void OMFFile::SaveAsHex(std::string filepath)
 	for (int idx = 0; idx < sections.size(); ++idx)
 	{
 		OMFSection* pSection = sections[ idx ];
-		// Chunk of bytes not allowed to cross bank boundary
 		hex.SaveBytes(m_pRAM, pSection->m_org, pSection->m_length);
 	}
 
