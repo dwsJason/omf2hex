@@ -53,6 +53,10 @@ static std::vector<std::string> split(const std::string& s, const char* separato
 					}
 				}
 			}
+			else
+			{
+				prev_pos++;
+			}
 		}
 	}
 

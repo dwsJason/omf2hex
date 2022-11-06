@@ -204,7 +204,7 @@ void OMFFile::LoadIntoMemory()
 			}
 		}
 
-		printf("LoadIntoMemory segment(%d), %s\n", section.m_segnum, section.m_segname.c_str());
+		printf("LoadIntoMemory segment(%d) kind(%04x), %s\n", section.m_segnum, section.m_kind, section.m_segname.c_str());
 
 		/* 
 		LCONST($F2)     // done
