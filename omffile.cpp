@@ -284,7 +284,8 @@ void OMFFile::LoadIntoMemory()
 					i8 num_shift = ss.Read<i8>();
 					u16 first_offset = ss.Read<u16>();
 					u16 ref_offset = ss.Read<u16>();
-					printf("cRELOC - unimplemented\n");
+					printf("cRELOC - num_bytes:%02x,num_shift:%d,first_offset=%04x,ref_offset=%04x\n"
+							,num_bytes, num_shift,first_offset,ref_offset);
 
 					switch (num_bytes)
 					{
@@ -292,7 +293,7 @@ void OMFFile::LoadIntoMemory()
 						{
 							u32 segmentOffset = first_offset;
 							u32 source_address = section.m_org + segmentOffset;
-							u32 patch_result = ref_offset;
+							u32 patch_result = section.m_org + ref_offset;
 							if (num_shift >= 0)
 							{
 								patch_result <<= num_shift;
@@ -309,7 +310,7 @@ void OMFFile::LoadIntoMemory()
 						{
 							u32 segmentOffset = first_offset;
 							u32 source_address = section.m_org + segmentOffset;
-							u32 patch_result = ref_offset;
+							u32 patch_result = section.m_org+ref_offset;
 							if (num_shift >= 0)
 							{
 								patch_result <<= num_shift;
@@ -327,7 +328,7 @@ void OMFFile::LoadIntoMemory()
 						{
 							u32 segmentOffset = first_offset;
 							u32 source_address = section.m_org + segmentOffset;
-							u32 patch_result = ref_offset;
+							u32 patch_result = section.m_org + ref_offset;
 							if (num_shift >= 0)
 							{
 								patch_result <<= num_shift;
@@ -346,7 +347,7 @@ void OMFFile::LoadIntoMemory()
 						{
 							u32 segmentOffset = first_offset;
 							u32 source_address = section.m_org + segmentOffset;
-							u32 patch_result = ref_offset;
+							u32 patch_result = section.m_org + ref_offset;
 							if (num_shift >= 0)
 							{
 								patch_result <<= num_shift;
@@ -363,8 +364,7 @@ void OMFFile::LoadIntoMemory()
 						}
 						break;
 					default:
-						printf("cINTERSEG num_bytes=%d\n", num_bytes);
-						printf("unimplemented\n");
+						printf("unimplemented --> cINTERSEG num_bytes=%d\n", num_bytes);
 						exit(2);
 					}
 

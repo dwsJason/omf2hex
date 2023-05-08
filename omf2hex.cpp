@@ -10,7 +10,7 @@
 //------------------------------------------------------------------------------
 void helpText()
 {
-	printf("omf2hex - v0.3\n");
+	printf("omf2hex - v0.5\n");
 	printf("--------------\n");
 	printf("Convert an OMF file into a flat binary, and export as an\n");
 	printf("Intel HEX file\n");
