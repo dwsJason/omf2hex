@@ -28,8 +28,9 @@ static std::string FixedLabelToString( u8* pLabel, size_t numBytes )
 
 
 //------------------------------------------------------------------------------
-OMFFile::OMFFile( std::string filepath )
-	: m_filepath( filepath )
+OMFFile::OMFFile( std::string filepath, bool bVerbose)
+	: m_bVerbose(bVerbose)
+	, m_filepath( filepath )
 	, m_pRawData( nullptr )
 {
 	FILE* pFile = nullptr;
@@ -204,6 +205,7 @@ void OMFFile::LoadIntoMemory()
 			}
 		}
 
+		if (m_bVerbose)
 		printf("LoadIntoMemory segment(%d) kind(%04x), %s\n", section.m_segnum, section.m_kind, section.m_segname.c_str());
 
 		/* 
@@ -235,12 +237,13 @@ void OMFFile::LoadIntoMemory()
 			switch (opcode)
 			{
 			case 0: //end
+				if (m_bVerbose)
 				printf("END\n");
 				bDone = true;
 				break;
 			case 0xE2:
 				{
-					printf("RELOC - unimplremented\n");
+					printf("RELOC - unimplemented\n");
 					exit(2);
 					u8 num_bytes_to_relocate = ss.Read<u8>(); //(1,2,3 or 4)
 					i8 shift_count   = ss.Read<i8>();
@@ -265,6 +268,7 @@ void OMFFile::LoadIntoMemory()
 					// m_numlen should really be 4 here
 					//assert(4==section.m_numlen);
 					u32 num_zeros = ss.Read<u32>();
+					if (m_bVerbose)
 					printf("DS %d bytes\n", num_zeros);
 					pMem += num_zeros;	// We already cleared the whole segment load memory to zero
 				}
@@ -273,6 +277,7 @@ void OMFFile::LoadIntoMemory()
 				{
 					u32 numBytes = ss.Read<u32>();
 					u32 address = (u32)(pMem - m_pRAM);
+					if (m_bVerbose)
 					printf("Load LCONST, size = %d, at %06X\n", numBytes, address);
 					ss.ReadBytes(pMem, numBytes);
 					pMem += numBytes;
@@ -284,6 +289,7 @@ void OMFFile::LoadIntoMemory()
 					i8 num_shift = ss.Read<i8>();
 					u16 first_offset = ss.Read<u16>();
 					u16 ref_offset = ss.Read<u16>();
+					if (m_bVerbose)
 					printf("cRELOC - num_bytes:%02x,num_shift:%d,first_offset=%04x,ref_offset=%04x\n"
 							,num_bytes, num_shift,first_offset,ref_offset);
 
@@ -303,6 +309,7 @@ void OMFFile::LoadIntoMemory()
 								patch_result >>= (-num_shift);
 							}
 							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
+							if (m_bVerbose)
 							printf("cRELOC Shift %d, %02x patched to %02x\n", num_shift, source_address&0xFF, patch_result&0xFF);
 						}
 						break;
@@ -321,6 +328,7 @@ void OMFFile::LoadIntoMemory()
 							}
 							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
 							pMemBase[ segmentOffset+1 ] = (patch_result>>8) & 0xFF;
+							if (m_bVerbose)
 							printf("cRELOC Shift %d, %04x patched to %04x\n", num_shift, source_address&0xFFFF, patch_result&0xFFFF);
 						}
 						break;
@@ -340,6 +348,7 @@ void OMFFile::LoadIntoMemory()
 							pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
 							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
 							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+							if (m_bVerbose)
 							printf("cRELOC Shift %d, %06x patched to %06x\n", num_shift, source_address&0xFFFFFF, patch_result&0xFFFFFF);
 						}
 						break;
@@ -360,6 +369,7 @@ void OMFFile::LoadIntoMemory()
 							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
 							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
 							pMemBase[ segmentOffset+4 ] = (patch_result>>24) & 0xFF;
+							if (m_bVerbose)
 							printf("cRELOC Shift %d, %08x patched to %08x\n", num_shift, source_address, patch_result);
 						}
 						break;
@@ -396,6 +406,7 @@ void OMFFile::LoadIntoMemory()
 								patch_result >>= (-num_shift);
 							}
 							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
+							if (m_bVerbose)
 							printf("cINTERSEG Shift %d, %02x patched to %02x\n", num_shift, source_address&0xFF, patch_result&0xFF);
 						}
 						break;
@@ -415,6 +426,7 @@ void OMFFile::LoadIntoMemory()
 							}
 							pMemBase[ segmentOffset+0 ] = (patch_result>>0) & 0xFF;
 							pMemBase[ segmentOffset+1 ] = (patch_result>>8) & 0xFF;
+							if (m_bVerbose)
 							printf("cINTERSEG Shift %d, %04x patched to %04x\n", num_shift, source_address&0xFFFF, patch_result&0xFFFF);
 						}
 						break;
@@ -435,6 +447,7 @@ void OMFFile::LoadIntoMemory()
 							pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
 							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
 							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
+							if (m_bVerbose)
 							printf("cINTERSEG Shift %d, %06x patched to %06x\n", num_shift, source_address&0xFFFFFF, patch_result&0xFFFFFF);
 						}
 						break;
@@ -456,6 +469,7 @@ void OMFFile::LoadIntoMemory()
 							pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
 							pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
 							pMemBase[ segmentOffset+3 ] = (patch_result>>24) & 0xFF;
+							if (m_bVerbose)
 							printf("cINTERSEG Shift %d, %08x patched to %08x\n", num_shift, source_address, patch_result);
 						}
 						break;
@@ -469,6 +483,7 @@ void OMFFile::LoadIntoMemory()
 			case 0xF7:
 				{
 					i32 length = ss.Read<i32>();
+					if (m_bVerbose)
 					printf("SUPER Compressed, size = %d\n", length);
 					{
 						// Super Compressed Relocation Data
@@ -476,30 +491,36 @@ void OMFFile::LoadIntoMemory()
 
 						if (0 == super_record_type)
 						{
+							if (m_bVerbose)
 							printf("    SUPER RELOC2 (2 bytes patch)\n");
 							// Shift 0, and relocate 2 bytes
 						}
 						else if (1 == super_record_type)
 						{
+							if (m_bVerbose)
 							printf("    SUPER RELOC3 (3 bytes patch)\n");
 							// Shift 0, and relocate 3 bytes
 						}
 						else
 						{
+							if (m_bVerbose)
 							printf("    SUPER INTERSEG%d\n", super_record_type - 1);
 
 							int super_interseg_type = super_record_type - 1;
 
 							if ((super_interseg_type >= 1) && (super_interseg_type<=12))
 							{
+								if (m_bVerbose)
 								printf("    fileNo=%d, shift=0, patchsize=3 bytes\n", super_interseg_type);
 							}
 							if ((super_interseg_type >= 13) && (super_interseg_type<=24))
 							{
+								if (m_bVerbose)
 								printf("    segmentNo=%d, shift=0, patchsize=2 bytes\n", super_interseg_type-12);
 							}
 							if ((super_interseg_type >= 25) && (super_interseg_type<=36))
 							{
+								if (m_bVerbose)
 								printf("    segmentNo=%d, shift=-16, patchsize=2 bytes\n", super_interseg_type-24);
 							}
 
@@ -519,6 +540,7 @@ void OMFFile::LoadIntoMemory()
 							}
 							else
 							{
+								if (m_bVerbose)
 								printf("$%02x: page $%04x contains %d patches\n", num_patches, address, num_patches+1);
 								int patch_counter = num_patches;
 								while (patch_counter>=0)
@@ -540,6 +562,7 @@ void OMFFile::LoadIntoMemory()
 											pMemBase[ segmentOffset+0 ] = (patch_result>>0)  & 0xFF;
 											pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
 
+											if (m_bVerbose)
 											printf("SUPERRELOC2: %04x patched to %04x\n", source_address, patch_result);
 										}
 										else if (1 == super_record_type)
@@ -556,16 +579,19 @@ void OMFFile::LoadIntoMemory()
 											pMemBase[ segmentOffset+1 ] = (patch_result>>8)  & 0xFF;
 											pMemBase[ segmentOffset+2 ] = (patch_result>>16) & 0xFF;
 
+											if (m_bVerbose)
 											printf("SUPERRELOC3: %06x patched to %06x\n", source_address, patch_result);
 										}
 										else
 										{
+											if (m_bVerbose)
 											printf("    SUPER INTERSEG%d\n", super_record_type - 1);
 
 											int super_interseg_type = super_record_type - 1;
 
 											if ((super_interseg_type >= 1) && (super_interseg_type<=12))
 											{
+												if (m_bVerbose)
 												printf("    fileNo=%d, shift=0, patchsize=3 bytes\n", super_interseg_type);
 												u32 segmentOffset = address + offset;
 
@@ -583,6 +609,7 @@ void OMFFile::LoadIntoMemory()
 											}
 											if ((super_interseg_type >= 13) && (super_interseg_type<=24))
 											{
+												if (m_bVerbose)
 												printf("    segmentNo=%d, shift=0, patchsize=2 bytes\n", super_interseg_type-12);
 
 												u32 segmentOffset = address + offset;
@@ -598,6 +625,7 @@ void OMFFile::LoadIntoMemory()
 											}
 											if ((super_interseg_type >= 25) && (super_interseg_type<=36))
 											{
+												if (m_bVerbose)
 												printf("    segmentNo=%d, shift=-16, patchsize=2 bytes\n", super_interseg_type-24);
 
 												u32 segmentOffset = address + offset;
@@ -617,6 +645,7 @@ void OMFFile::LoadIntoMemory()
 									}
 
 								}
+								if (m_bVerbose)
 								printf("\n");
 								address += 0x100;
 							}
@@ -625,6 +654,7 @@ void OMFFile::LoadIntoMemory()
 
 						if (length != 0)
 						{
+							if (m_bVerbose)
 							printf("PROBLEM DECODING SUPERCOMPRESSED SEG, length = %d\n", length);
 							bDone = true;
 						}

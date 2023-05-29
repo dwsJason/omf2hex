@@ -155,7 +155,7 @@ public:
 class OMFFile
 {
 public:
-	OMFFile( std::string filepath );
+	OMFFile( std::string filepath, bool bVerbose=false);
 	~OMFFile();
 
 	void MapIntoMemory(ORGFile& org_file );
@@ -166,6 +166,9 @@ public:
 	void SaveAsHex(std::string filepath);
 
 private:
+
+	bool m_bVerbose;
+
 	std::string m_filepath;
 	std::vector<OMFSection> m_sections;
 
