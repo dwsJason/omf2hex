@@ -2,13 +2,12 @@
 // minialloc, Dumb Mini Allocator Class
 // 
 // This is allocating segmented memory, so it's working with buckets of 64KB
-// it isn't going to give you memory that crosses bank boundaries
+// it isn't going to give you memory that crosses bank boundaries (unless the requested size if > 64KB)
 // 
 // This doesn't have to be efficient, because:
 // 
 // 1.  it's not realtime
-// 2.  it'll at most have to make 256 allocations
-// 3.  it doesn't have to free memory
+// 2.  it doesn't have to free memory
 //
 #ifndef MINIALLOC_H_
 #define MINIALLOC_H_
@@ -33,20 +32,19 @@ public:
 
 	Allocation* AddAllocation(u32 address, u32 sizeBytes);
 
-	std::vector<Allocation*> FindOverlaps(Allocation* pReferenceAlloc, bool bIgnoreReserved=true);
-
 private:
 
-	bool overlaps(Allocation* allocation, u32 address, u32 sizeBytes);
+	// Block Map, contains a bool for each 256 byte page available in memory
+
+	bool block_map[ 256 * 256 ]; // 256 pages * 256 banks
+
 	u32 force_align(u32 address, u32 alignment);
 
 
 	u32 m_minAddress;
 	u32 m_alignment;
 
-	Allocation* m_pReservedAllocation; // reserved to hold out min address
-
-	std::vector<Allocation*> m_allocations;
+	std::vector<Allocation*> m_allocations;  // I don't need this, but since it's already written, keep it
 };
 
 
